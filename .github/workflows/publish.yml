@@ -1,0 +1,21 @@
+name: Publish
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  publish:
+    needs: [test]
+    if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
+    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
+    runs-on: ubuntu-latest
+    secrets:
+      PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
