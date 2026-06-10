@@ -6,16 +6,56 @@ on:
       - published
 
 jobs:
-  test:
+  resolve_remote_commit:
     runs-on: ubuntu-latest
-
+    outputs:
+      llama_cpp_commit: ${{ steps.llama-cpp-commit.outputs.sha }}
+      llama_swap_commit: ${{ steps.llama-swap-commit.outputs.sha }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Resolve newest llama.cpp commit
+        id: llama-cpp-commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo="https://github.com/ggml-org/llama.cpp.git"
+          branch="master"
+
+          sha="$(git ls-remote "$repo" "refs/heads/$branch" | awk '{print $1}')"
+
+          if [ -z "$sha" ]; then
+            echo "Could not resolve commit for $repo branch $branch" >&2
+            exit 1
+          fi
+
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Resolve newest llama-swap commit
+        id: llama-swap-commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo="https://github.com/mostlygeek/llama-swap.git"
+          branch="main"
+
+          sha="$(git ls-remote "$repo" "refs/heads/$branch" | awk '{print $1}')"
+
+          if [ -z "$sha" ]; then
+            echo "Could not resolve commit for $repo branch $branch" >&2
+            exit 1
+          fi
+
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
   publish:
-    needs: [test]
+    needs: [resolve_remote_commit]
     if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
     uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
     runs-on: ubuntu-latest
+    with:
+      BUILD_ARGS_JSON: |
+        {
+          "LLAMA_CPP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_cpp_commit }}",
+          "LLAMA_SWAP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_swap_commit }}"
+        }
     secrets:
       PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
