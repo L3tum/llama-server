@@ -52,9 +52,11 @@ RUN cmake -S . -B build -G Ninja \
     -DLLAMA_BUILD_SERVER=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CUDA_ARCHITECTURES=120a-real \
+    -DGGML_CUDA_FA_ALL_QUANTS=ON \
     -DLLAMA_BUILD_TESTS=OFF \
     -DLLAMA_BUILD_EXAMPLES=OFF \
     -DBUILD_SHARED_LIBS=OFF \
+    -DGGML_SCHED_MAX_COPIES=2 \
     -DCMAKE_EXE_LINKER_FLAGS="-L${CUDA_STUBS} -Wl,-rpath-link,${CUDA_STUBS}"
 
 # --- Layer 6: Build (ccache + ninja cache = fast rebuilds) ---
@@ -78,61 +80,8 @@ RUN mkdir -p /out/llama/bin /out/llama/lib && \
     done; \
     rm -f /out/llama/lib/libcuda.so && rm -f /out/llama/lib/libcuda.so.1
 
-# ===== STAGE 2: Build llama-swap (Go) =====
-FROM node:24-bookworm AS llama_swap_build
-ARG LLAMA_SWAP_COMMIT
-ARG GO_VERSION
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    ca-certificates \
-    make \
-    curl \
-    tar \
-&& rm -rf /var/lib/apt/lists/*
-
-RUN set -eux; \
-    arch="$(dpkg --print-architecture)"; \
-    case "$arch" in \
-      amd64) goarch="amd64" ;; \
-      arm64) goarch="arm64" ;; \
-      *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
-    esac; \
-    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${goarch}.tar.gz" \
-      -o /tmp/go.tgz && \
-    tar -C /usr/local -xzf /tmp/go.tgz && \
-    rm /tmp/go.tgz
-
-ENV PATH="/usr/local/go/bin:${PATH}"
-
-WORKDIR /src/llama-swap
-RUN git init \
-    && git remote add origin https://github.com/mostlygeek/llama-swap.git \
-    && git fetch --depth=1 origin "$LLAMA_SWAP_COMMIT" \
-    && git checkout FETCH_HEAD
-
-#RUN git clone --depth 1 --branch "${LLAMA_SWAP_REF}" \
-#    https://github.com/mostlygeek/llama-swap.git .
-
-# Download Go modules (cached separately via BuildKit)
-RUN --mount=type=cache,target=/root/go/pkg/mod,sharing=locked \
-    go version && \
-    go mod download
-
-# Build UI (node_modules cached separately)
-RUN --mount=type=cache,target=/src/llama-swap/node_modules,sharing=locked \
-    make ui
-
-# Build binary (Go build cache persists)
-RUN --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    --mount=type=cache,target=/root/go/pkg/mod,sharing=locked \
-    make linux-amd64 \
-&& test -x build/llama-swap-linux-amd64
-
-RUN mkdir -p /out && \
-    install -m 0755 build/llama-swap-linux-amd64 /out/llama-swap
-
-# ===== STAGE 3: Runtime =====
+# ===== STAGE 2: Runtime =====
 FROM ${CUDA_RUNTIME_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -154,7 +103,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker-compose-plugin \
 && rm -rf /var/lib/apt/lists/*
 
-COPY --from=llama_swap_build /out/llama-swap /usr/local/bin/llama-swap
 COPY --from=llama_cpp_build /out/llama/bin/llama-server /usr/local/bin/llama-server
 COPY --from=llama_cpp_build /out/llama/bin/llama-bench /usr/local/bin/llama-bench
 COPY --from=llama_cpp_build /out/llama/bin/llama-fit-params /usr/local/bin/llama-fit-params
@@ -174,5 +122,4 @@ RUN set -eux; \
     fi
 
 WORKDIR /app
-EXPOSE 8080
-ENTRYPOINT ["llama-swap"]
+ENTRYPOINT ["llama-server"]
