@@ -49,7 +49,7 @@ jobs:
   publish:
     needs: [resolve_remote_commit]
     if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
-    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
+    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@3780e38026cf1f2dbca1735cc1d27c41b58829bb # main
     runs-on: ubuntu-latest
     with:
       BUILD_ARGS_JSON: |
