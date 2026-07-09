@@ -28,6 +28,7 @@ jobs:
             exit 1
           fi
 
+          echo "sha=$sha"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Resolve newest llama-swap commit
         id: llama-swap-commit
