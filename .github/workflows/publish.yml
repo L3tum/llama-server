@@ -1,36 +1,46 @@
 name: Publish
-
 on:
   release:
     types:
       - published
-
 jobs:
   resolve_remote_commit:
     runs-on: ubuntu-latest
     outputs:
       llama_cpp_commit: ${{ steps.llama-cpp-commit.outputs.sha }}
-      llama_swap_commit: ${{ steps.llama-swap-commit.outputs.sha }}
+      ik_llama_commit: ${{ steps.ik-llama-commit.outputs.sha }}
     steps:
       - name: Resolve newest llama.cpp commit
         id: llama-cpp-commit
         shell: bash
         run: |
           set -euo pipefail
-
           repo="https://github.com/ggml-org/llama.cpp.git"
           branch="master"
-
           sha="$(git ls-remote "$repo" "refs/heads/$branch" | awk '{print $1}')"
-
           if [ -z "$sha" ]; then
             echo "Could not resolve commit for $repo branch $branch" >&2
             exit 1
           fi
-
           echo "sha=$sha"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-  publish:
+
+      - name: Resolve newest ik_llama.cpp commit
+        id: ik-llama-commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="https://github.com/ikawrakow/ik_llama.cpp.git"
+          branch="main"
+          sha="$(git ls-remote "$repo" "refs/heads/$branch" | awk '{print $1}')"
+          if [ -z "$sha" ]; then
+            echo "Could not resolve commit for $repo branch $branch" >&2
+            exit 1
+          fi
+          echo "sha=$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  publish_llama_cpp:
     needs: [resolve_remote_commit]
     if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
     uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
@@ -38,7 +48,24 @@ jobs:
     with:
       BUILD_ARGS_JSON: |
         {
-          "LLAMA_CPP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_cpp_commit }}"
+          "LLAMA_CPP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_cpp_commit }}",
+          "LLAMA_CPP_REPO": "https://github.com/ggml-org/llama.cpp.git"
         }
+    secrets:
+      PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
+
+  publish_ik_llama:
+    needs: [resolve_remote_commit]
+    if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
+    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
+    runs-on: ubuntu-latest
+    with:
+      BUILD_ARGS_JSON: |
+        {
+          "LLAMA_CPP_COMMIT": "${{ needs.resolve_remote_commit.outputs.ik_llama_commit }}",
+          "LLAMA_CPP_REPO": "https://github.com/ikawrakow/ik_llama.cpp.git"
+        }
+      RELEASE_TAG: ik-llama
+      PUSH_LATEST: false
     secrets:
       PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
