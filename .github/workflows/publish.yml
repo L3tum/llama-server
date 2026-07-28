@@ -30,23 +30,6 @@ jobs:
 
           echo "sha=$sha"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-      - name: Resolve newest llama-swap commit
-        id: llama-swap-commit
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          repo="https://github.com/mostlygeek/llama-swap.git"
-          branch="main"
-
-          sha="$(git ls-remote "$repo" "refs/heads/$branch" | awk '{print $1}')"
-
-          if [ -z "$sha" ]; then
-            echo "Could not resolve commit for $repo branch $branch" >&2
-            exit 1
-          fi
-
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
   publish:
     needs: [resolve_remote_commit]
     if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
@@ -55,8 +38,7 @@ jobs:
     with:
       BUILD_ARGS_JSON: |
         {
-          "LLAMA_CPP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_cpp_commit }}",
-          "LLAMA_SWAP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_swap_commit }}"
+          "LLAMA_CPP_COMMIT": "${{ needs.resolve_remote_commit.outputs.llama_cpp_commit }}"
         }
     secrets:
       PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
