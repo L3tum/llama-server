@@ -97,8 +97,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=llama_cpp_build /out/llama/bin/llama-server /usr/local/bin/llama-server
-COPY --from=llama_cpp_build /out/llama/bin/llama-bench /usr/local/bin/llama-bench
-COPY --from=llama_cpp_build /out/llama/bin/llama-fit-params /usr/local/bin/llama-fit-params
 COPY --from=llama_cpp_build /out/llama/lib/ /usr/local/lib/llama/
 COPY --from=llama_cpp_build /out/llama/ldd.txt /usr/local/share/llama-server-ldd.txt
 
