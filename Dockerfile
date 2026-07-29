@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1
-ARG CUDA_DEVEL_IMAGE=nvidia/cuda:13.3.0-devel-ubuntu24.04
-ARG CUDA_RUNTIME_IMAGE=nvidia/cuda:13.3.0-runtime-ubuntu24.04
+# syntax=docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+ARG CUDA_DEVEL_IMAGE=nvidia/cuda:13.3.0-devel-ubuntu24.04@sha256:ef2203909e80b8b976cfc672f7e2ae2b00bc0e25c404ee86d89e10a3802f1c52
+ARG CUDA_RUNTIME_IMAGE=nvidia/cuda:13.3.0-runtime-ubuntu24.04@sha256:789e629e49401647e22b7054ae9c6c4f6427dba68010ba428deb4cc6b063676e
 ARG LLAMA_CPP_COMMIT=xxx
 ARG LLAMA_CPP_REPO=https://github.com/ggml-org/llama.cpp.git
 ARG GO_VERSION="1.26.3"
