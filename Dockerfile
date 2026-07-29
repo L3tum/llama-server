@@ -51,10 +51,11 @@ RUN cmake -S . -B build -G Ninja \
     -DCMAKE_CUDA_ARCHITECTURES_NATIVE=120 \
     -DGGML_CUDA_FA_ALL_QUANTS=ON \
     -DLLAMA_BUILD_TESTS=OFF \
-    -DLLAMA_BUILD_EXAMPLES=OFF \
+    -DLLAMA_BUILD_EXAMPLES=ON \
     -DBUILD_SHARED_LIBS=OFF \
     -DGGML_SCHED_MAX_COPIES=2 \
     -DGGML_CUDA_GRAPHS=ON \
+    -DGGML_CUDA_USE_GRAPHS=ON \
     -DCMAKE_EXE_LINKER_FLAGS="-L${CUDA_STUBS} -Wl,-rpath-link,${CUDA_STUBS}"
 
 # --- Layer 6: Build (ccache + ninja cache = fast rebuilds) ---
