@@ -43,7 +43,7 @@ jobs:
   publish_llama_cpp:
     needs: [resolve_remote_commit]
     if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
-    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
+    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@8b730606a67c0392e8952fa9122e82cc4f90c724 # main
     runs-on: ubuntu-latest
     with:
       BUILD_ARGS_JSON: |
@@ -57,7 +57,7 @@ jobs:
   publish_ik_llama:
     needs: [resolve_remote_commit]
     if: github.event_name == 'release' && github.event.action == 'published' && github.server_url != 'https://github.com'
-    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@main
+    uses: l3tum/reusable-workflows/.github/workflows/publish-forgejo.yml@8b730606a67c0392e8952fa9122e82cc4f90c724 # main
     runs-on: ubuntu-latest
     with:
       BUILD_ARGS_JSON: |
